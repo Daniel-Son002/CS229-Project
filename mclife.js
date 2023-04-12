@@ -1,0 +1,35 @@
+function defaultGrid() {
+    makeRows(16);
+    makeColumns(16);
+}
+
+function makeRows(rowNum) {
+    for (r = 0; r < rowNum; r++) {
+        let row = document.createElement("div");
+        container.appendChild(row).className = "gridRow";
+    };
+};
+
+function makeColumns(cellNum) {
+    for (i = 0; i < rows.length; i++) {
+        for (j = 0; j < cellNum; j++) {
+            let newCell = document.createElement("div");
+            rows[j].appendChild(newCell).className = "cell";
+        };
+
+    };
+};
+
+const gridStrs = [
+    "000000|000000|00P(URLF)00|000000|000000|000000",
+    "00000000|00000000|000(DRLF)0000|00000000|000P(URLF)000|00000000|00000000|00000000",
+    "00000000|00000000|0000(LRLF)000|00000000|00(URLF)P000|00000000|00000000|00000000",
+    "00000000|00(DLRF)00000|0(RRLF)000000|00000000|00000000|00000000|00000P00|00000000",
+    "000(DLRF)(DRLF)000|00000000|00000000|00000000|00000000|00000000|000P0000|00000000",
+    "000000|000000|00(RLRF+)000|000(DLRF+)00|000000|000000",
+    "000000|000000|00(RLRF+)000|000(DLRF+)10|000000|000000",
+    "00000000|00000000|00000000|00(DRLF+)0(URLF+)000|0000(URLF)000|00000000|00000000|00000000",
+    "00000000|0P000000|00000000|00000(LLRW)00|00000(LLRB)00|00000(LRLW)00|00000000|00000000",
+    "00000000000|000(DLRF)0000000|00(RRLF)00000000|00(RRLF)00000000|00000000(LRLF+)00|00000000000|0000(RRLF+)(DRLF)00000|00000000000|000(RRLF)00(DLRF)(LRLF)000|0000000(ULRF)000|00000000000",
+  ]
+
