@@ -4,8 +4,14 @@ class Cell {
     this.id = id;
     this.x = x;
     this.y = y;
+    this.energy = startingEnergy;
     const total = skills.reduce((a,b) => a+b,0);
     this.skills = skills.map(x => x/total);
+  }
+
+  useEnergy() {
+    this.energy -= lerp(minEnergyDecrement,maxEnergyDecrement,1-this.skills[ENERGY_EFF]);
+    return this.energy > 0;
   }
 
   move() {

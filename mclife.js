@@ -13,7 +13,10 @@ const VISION = 1;
 const STRENGTH = 2;
 const ENERGY_EFF = 3;
 const numSkills = 4;
-const speed = 1;
+const startingEnergy = 100;
+const minEnergyDecrement = 0.3;
+const maxEnergyDecrement = 2;
+const simulationSpeed = 1;
 let going = false;
 
 function setup() {
@@ -67,23 +70,35 @@ const sampleFromDistribution = distr => {
 }
 
 const resolveCollision = colliders => {
-  const winner = sampleFromDistribution(colliders.map(c => c.skills[STRENGTH]));
+  const strengths = colliders.map(c => c.skills[STRENGTH]);
+  const winner = sampleFromDistribution(strengths);
   const l = colliders.length;
+  let energyTaken = 0;
   for (let i = 0; i < l; i++) {
     if (i == winner) continue;
+    energyTaken += colliders[i].energy;
     delete cells[colliders[i].id];
   }
-  return colliders[winner].id;
+  return {
+    winner: colliders[winner].id,
+    energy: energyTaken,
+  };
 }
 
 const updateCells = () => {
+  for (let cellId of Object.keys(cells)) {
+    if (!cells[cellId].useEnergy()) {
+      delete cells[cellId];
+    }
+  }
   grid = {};
   collisions.length = 0;
   for (let cellId of Object.keys(cells)) {
     cells[cellId].move();
   }
   for (let coord of collisions) {
-    const winner = resolveCollision(grid[coord]);
+    const {winner,energy} = resolveCollision(grid[coord]);
+    cells[winner].energy += energy;
     grid[coord] = [cells[winner]];
   }
   // console.log(grid);
@@ -106,7 +121,7 @@ function draw() {
   for (let cellId of Object.keys(cells)) {
     cells[cellId].show();
   }
-  if (going && frameCount % speed == 0) {
+  if (going && frameCount % simulationSpeed == 0) {
     updateCells();
   }
 }
