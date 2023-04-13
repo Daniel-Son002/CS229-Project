@@ -1,6 +1,6 @@
 const h = window.innerHeight;
 const w = h;
-const n = 11;
+let n = 11;
 const side = w/n;
 const menuWidth = 200;
 let cells = {};
@@ -18,10 +18,11 @@ let going = false;
 
 function setup() {
   createCanvas(w+2*menuWidth,h).parent("canvas-div");
+  // testResolveCollision();
   createCells();
 }
 
-const createCells = () => {
+const createCells = (testing=false) => {
   for (; currId < numCells; currId++) {
     let x = Math.floor(Math.random()*n);
     let y = Math.floor(Math.random()*n);
@@ -32,9 +33,47 @@ const createCells = () => {
       coord = x+","+y;
     }
     grid[coord] = true;
-    const skills = Array.from({length: numSkills}, () => Math.random());
+    const skills = testing ? [0,0,currId/10,1-currId/10] :
+      Array.from({length: numSkills}, () => Math.random());
     cells[currId] = new Cell(currId,x,y,skills);
   }
+}
+
+const resolveCollisionOldVersion = colliders => {
+  const l = colliders.length;
+  let maxStrength = colliders[0].skills[STRENGTH];
+  let currWinner = colliders[0].id;
+  for (let i = 1; i < l; i++) {
+    if (colliders[i].skills[STRENGTH] > maxStrength) {
+      delete cells[currWinner];
+      currWinner = colliders[i].id;
+    } else {
+      delete cells[colliders[i].id];
+    }
+  }
+  return currWinner;
+}
+
+const sampleFromDistribution = distr => {
+  const total = distr.reduce((a,b) => a+b,0);
+  const rand = Math.random()*total;
+  let i = 0;
+  let acc = distr[i];
+  while (acc < rand) {
+    i += 1;
+    acc += distr[i];
+  }
+  return i;
+}
+
+const resolveCollision = colliders => {
+  const winner = sampleFromDistribution(colliders.map(c => c.skills[STRENGTH]));
+  const l = colliders.length;
+  for (let i = 0; i < l; i++) {
+    if (i == winner) continue;
+    delete cells[colliders[i].id];
+  }
+  return colliders[winner].id;
 }
 
 const updateCells = () => {
@@ -44,19 +83,8 @@ const updateCells = () => {
     cells[cellId].move();
   }
   for (let coord of collisions) {
-    const colliders = grid[coord];
-    const l = colliders.length;
-    let maxStrength = colliders[0].skills[STRENGTH];
-    let currWinner = colliders[0].id;
-    for (let i = 1; i < l; i++) {
-      if (colliders[i].skills[STRENGTH] > maxStrength) {
-        delete cells[currWinner];
-        currWinner = colliders[i].id;
-      } else {
-        delete cells[colliders[i].id];
-      }
-    }
-    grid[coord] = [cells[currWinner]];
+    const winner = resolveCollision(grid[coord]);
+    grid[coord] = [cells[winner]];
   }
   // console.log(grid);
 }
