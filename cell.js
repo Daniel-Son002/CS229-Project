@@ -17,33 +17,27 @@ class Cell {
     return this.energy > 0;
   }
 
-  move() {
-    const dir = Math.floor(Math.random()*5);
+  getMove(dirs) {
+    const dir = Math.floor(Math.random()*dirs.length);
+    return dirs[dir];
     // if (dir != 4) {
     //   fill(255);
     //   rect(this.x*side,this.y*side,side,side);
     // }
-    switch (dir) {
-      case 0:
-        this.x += 1;
-        break;
-      case 1:
-        this.x -= 1;
-        break;
-      case 2:
-        this.y += 1;
-        break;
-      case 3:
-        this.y -= 1;
-    }
-    this.x = constrain(this.x,0,n-1);
-    this.y = constrain(this.y,0,n-1);
+  }
+
+  doMove(x,y) {
+    this.x += x;
+    this.y += y;
+    // this.x = constrain(this.x,0,n-1);
+    // this.y = constrain(this.y,0,n-1);
     const coord = this.x+","+this.y;
     if (!grid[coord]) {
       grid[coord] = [];
     } else {
       collisions.push(coord);
     }
+    // console.log(this.id,coord)
     grid[coord].push(this);
   }
 

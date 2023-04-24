@@ -1,15 +1,15 @@
 const h = window.innerHeight;
 const w = h;
-let n = 11;
+let n = 100;
 const side = w/n;
 const menuWidth = 200;
 let cells = {};
 let grid = {};
 const collisions = [];
 // const pairs = [];
-const organismList = {};
-const organismAsgns = {};
-let numCells = 100;
+const orgList = {};
+const orgAsgns = {};
+let numCells = 1000;
 let currId = 0;
 let currOrgId = numCells;
 const ADHESION = 0;
@@ -20,6 +20,7 @@ const numSkills = 4;
 const startingEnergy = 100;
 const minEnergyDecrement = -0.5;
 const maxEnergyDecrement = 2;
+const visionCellLimit = 5;
 const simulationSpeed = 1;
 let going = false;
 
@@ -27,6 +28,11 @@ function setup() {
   createCanvas(w+2*menuWidth,h).parent("canvas-div");
   // testResolveCollision();
   createCells();
+  // while (Object.keys(orgList).length >= 10) {
+  //   updateCells();
+  //   // console.log(Object.keys(orgList).length);
+  // }
+  // draw();
 }
 
 const createCells = (testing=false) => {
@@ -44,8 +50,8 @@ const createCells = (testing=false) => {
       Array.from({length: numSkills}, () => Math.random());
     const cell = new Cell(currId,x,y,skills);
     cells[currId] = cell;
-    organismList[currId] = [cell];
-    organismAsgns[currId] = currId;
+    orgList[currId] = [cell];
+    orgAsgns[currId] = currId;
   }
 }
 
@@ -93,11 +99,11 @@ const resolveCollision = colliders => {
 }
 
 const updateCells = () => {
-  for (let cellId of Object.keys(cells)) {
-    if (!cells[cellId].useEnergy()) {
-      delete cells[cellId];
-    }
-  }
+  // for (let cellId of Object.keys(cells)) {
+  //   if (!cells[cellId].useEnergy()) {
+  //     delete cells[cellId];
+  //   }
+  // }
   grid = {};
   for (let cellId of Object.keys(cells)) {
     const cell = cells[cellId];
@@ -125,23 +131,71 @@ const updateCells = () => {
     for (const pair of pairs[i]) {
       if (pair[0]["neighbor"+neighborStrings[i]]) continue;
       pair[0]["neighbor"+neighborStrings[i]] = true;
-      const org1 = organismAsgns[pair[0].id];
-      const org2 = organismAsgns[pair[1].id];
-      if (!organismList[org1] || !organismList[org2]) {
-        console.log("BADD",org1,org2);
-      }
+      const org1 = orgAsgns[pair[0].id];
+      const org2 = orgAsgns[pair[1].id];
+      // if (!orgList[org1] || !orgList[org2]) {
+      //   console.log("BADD",org1,org2);
+      // }
       if (org1 != org2) {
-        organismList[org1] = organismList[org1].concat(organismList[org2]);
-        for (let {id} of organismList[org2]) {
-          organismAsgns[id] = org1;
+        orgList[org1] = orgList[org1].concat(orgList[org2]);
+        for (let {id} of orgList[org2]) {
+          orgAsgns[id] = org1;
         }
-        delete organismList[org2];
-        // organismAsgns[pair[1].id] = org1;
+        delete orgList[org2];
+        // orgAsgns[pair[1].id] = org1;
       }
     }
   }
 
-  // grid = {};
+  grid = {};
+  for (const orgId of Object.keys(orgList)) {
+    const orgCells = orgList[orgId].slice();
+    const dirs = [[0,0]];
+    let left = true;
+    for ({x} of orgCells) {
+      if (x == 0) {
+        left = false;
+        break;
+      }
+    }
+    if (left) dirs.push([-1,0]);
+    let right = true;
+    for ({x} of orgCells) {
+      if (x == n-1) {
+        right = false;
+        break;
+      }
+    }
+    if (right) dirs.push([1,0]);
+    let top = true;
+    for ({y} of orgCells) {
+      if (y == 0) {
+        top = false;
+        break;
+      }
+    }
+    if (top) dirs.push([0,-1]);
+    let bottom = true;
+    for ({y} of orgCells) {
+      if (y == n-1) {
+        bottom = false;
+        break;
+      }
+    }
+    if (bottom) dirs.push([0,1]);
+    if (orgCells.length > visionCellLimit) {
+      orgCells.sort((a,b) => b.skills[VISION]-a.skills[VISION]);
+      orgCells.splice(visionCellLimit);
+    }
+    const moves = orgCells.map(c => c.getMove(dirs));
+    const cellVisions = orgCells.map(c => c.skills[VISION]);
+    const move = moves[sampleFromDistribution(cellVisions)];
+    for (let cell of orgList[orgId]) {
+      // console.log(cell.id,...move);
+      cell.doMove(...move);
+    }
+  }
+
   // collisions.length = 0;
   // for (let cellId of Object.keys(cells)) {
   //   cells[cellId].move();
@@ -156,8 +210,8 @@ const updateCells = () => {
 
 function keyPressed() {
   // console.log(cells);
-  updateCells();
-  // going = !going;
+  // updateCells();
+  going = !going;
 }
 
 function draw() {
@@ -177,4 +231,5 @@ function draw() {
   if (going && frameCount % simulationSpeed == 0) {
     updateCells();
   }
+  // noLoop();
 }
