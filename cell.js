@@ -2,11 +2,14 @@ class Cell {
 
   constructor(id, x, y, skills) {
     this.id = id;
+    this.orgId = id;
     this.x = x;
     this.y = y;
     this.energy = startingEnergy;
     const total = skills.reduce((a,b) => a+b,0);
     this.skills = skills.map(x => x/total);
+    this.neighborRight = false;
+    this.neighborDown = false;
   }
 
   useEnergy() {
@@ -49,5 +52,17 @@ class Cell {
     rect(this.x*side,this.y*side,side,side);
     fill(0,0,0);
     text(this.id,this.x*side+side/3,this.y*side+side/3);
+  }
+
+  showConns() {
+    push();
+    strokeWeight(3);
+    if (this.neighborRight) {
+      line((this.x+0.95)*side,(this.y+0.5)*side,(this.x+1.05)*side,(this.y+0.5)*side);
+    }
+    if (this.neighborDown) {
+      line((this.x+0.5)*side,(this.y+0.95)*side,(this.x+0.5)*side,(this.y+1.05)*side);
+    }
+    pop();
   }
 }
