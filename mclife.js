@@ -13,7 +13,7 @@ const showIds = false;
 const showConnections = false;
 const h = window.innerHeight;
 const w = h;
-let n = 150;
+let n = 50;
 const side = w/n;
 const menuWidth = 0;
 let cells = {};
@@ -25,7 +25,7 @@ let orgAsgns = {};
 const plants = {};
 const plantEnergy = 250;
 const startingNumPlants = Math.floor(400/150**2*n**2);
-const newPlantRate = 5/150**2*n**2;
+const newPlantRate = 6*n/150;
 const maxPlants = Math.floor(800/150**2*n**2);
 let numCells = Math.floor(1000/150**2*n**2);
 let currId = 1;
@@ -39,7 +39,7 @@ const startingEnergy = 1000;
 const minEnergyDecrement = -1;
 const maxEnergyDecrement = 2;
 const maxVision = 10;
-const fixedReprThresh = 2*startingEnergy;
+const fixedReprThresh = 5*startingEnergy;
 const perCellReprThresh = 2*startingEnergy;
 // const visionCellLimit = 5;
 const simulationSpeed = 1;
@@ -335,7 +335,7 @@ const updateCells = () => {
       if (!!cellRight/* && org != orgAsgns[cellRight.id]*/) {
         // const adhesion1 = cell.skills[ADHESION];
         // const adhesion2 = cellRight.skills[ADHESION];
-        // if (Math.random() < adhesion1 && Math.random() < adhesion2) {
+        // if (Math.random() < adhesion1 || Math.random() < adhesion2) {
         const adhesion = Math.min(cell.skills[ADHESION], cellRight.skills[ADHESION]);
         if (Math.random() < adhesion) {
           cell.neighborRight = cellRight.id;
@@ -349,7 +349,7 @@ const updateCells = () => {
       if (!!cellDown/* && org != orgAsgns[cellDown.id]*/) {
         // const adhesion1 = cell.skills[ADHESION];
         // const adhesion2 = cellDown.skills[ADHESION];
-        // if (Math.random() < adhesion1 && Math.random() < adhesion2) {
+        // if (Math.random() < adhesion1 || Math.random() < adhesion2) {
         const adhesion = Math.min(cell.skills[ADHESION], cellDown.skills[ADHESION]);
         if (Math.random() < adhesion) {
           cell.neighborDown = cellDown.id;

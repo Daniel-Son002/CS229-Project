@@ -102,10 +102,10 @@ class Cell {
     push();
     noStroke();
     // fill(200*(1-this.skills[STRENGTH]));
-    fill(lerp(60,255,this.skills[ADHESION]),
-         lerp(60,255,this.skills[STRENGTH]),
+    fill(lerp(60,255,this.skills[STRENGTH]),
          lerp(60,255,this.skills[VISION]),
-         lerp(150,255,this.skills[ENERGY_EFF]))
+         lerp(60,255,this.skills[ENERGY_EFF]),
+         lerp(150,255,this.skills[ADHESION]));
     rect(this.x*side,this.y*side,side,side);
     pop();
     if (showIds) {
