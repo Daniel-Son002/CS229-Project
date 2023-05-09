@@ -13,7 +13,7 @@ const showIds = false;
 const showConnections = false;
 const h = window.innerHeight;
 const w = h;
-let n = 50;
+let n = 150;
 const side = w/n;
 const menuWidth = 0;
 let cells = {};
@@ -23,11 +23,11 @@ const collisions = [];
 let orgList = {};
 let orgAsgns = {};
 const plants = {};
-const plantEnergy = 250;
-const startingNumPlants = Math.floor(400/150**2*n**2);
-const newPlantRate = 6*n/150;
-const maxPlants = Math.floor(800/150**2*n**2);
-let numCells = Math.floor(1000/150**2*n**2);
+const plantEnergy = 350;
+const startingNumPlants = 300;
+const newPlantRate = 0.5;
+const maxPlants = 600;
+let numCells = 2500;
 let currId = 1;
 let currOrgId = numCells;
 const ADHESION = 0;
@@ -39,8 +39,9 @@ const startingEnergy = 1000;
 const minEnergyDecrement = -1;
 const maxEnergyDecrement = 2;
 const maxVision = 10;
-const fixedReprThresh = 5*startingEnergy;
+const fixedReprThresh = startingEnergy;
 const perCellReprThresh = 2*startingEnergy;
+const ageLimit = 3000;
 // const visionCellLimit = 5;
 const simulationSpeed = 1;
 const moveCoords = {
@@ -51,12 +52,26 @@ const moveCoords = {
   "up": [0,-1],
 }
 let going = false;
+let startTime;
+let timestep = 0;
+let s = "id,birth_time,lifespan,offspring,average_size,adhesion,vision,strength,energy_efficiency,passive_death\n";
 
 function setup() {
   createCanvas(w+2*menuWidth,h).parent("canvas-div");
   // testResolveCollision();
   createCells();
-  createPlants();
+  createInitialPlants();
+  // startTime = (new Date()).getTime();
+  // for (let i = 0; i < 15000+ageLimit; i++) {
+  //   updateCells();
+  //   createPlants();
+  //   timestep++;
+  // }
+  // console.log((new Date()).getTime()-startTime);
+  // draw();
+  // noLoop();
+  // console.save(s,(new Date()).toTimeString()+".txt");
+  // 166826
   // while (Object.keys(orgList).length >= 10) {
   //   updateCells();
   //   // console.log(Object.keys(orgList).length);
@@ -77,7 +92,7 @@ const createCells = (testing=false) => {
     grid[coord] = true;
     let skills = testing ? [0,0,currId/10,1-currId/10] :
       Array.from({length: numSkills}, () => Math.random());
-    const cell = new Cell(currId,x,y,skills);
+    const cell = new Cell(currId,x,y,skills,timestep);
     cells[currId] = cell;
     orgList[currId] = [cell];
     orgAsgns[currId] = currId;
@@ -96,9 +111,23 @@ const createPlant = () => {
   plants[coord] = true;
 }
 
-const createPlants = () => {
+const createInitialPlants = () => {
   for (let i = 0; i < startingNumPlants; i++) {
     createPlant();
+  }
+}
+
+const createPlants = () => {
+  if (Object.keys(plants).length < maxPlants && Math.random() < newPlantRate) {
+    const newPlantTrials = Math.ceil(newPlantRate*2);
+    let plantsCreated = 0;
+    for (let i = 0; i < newPlantTrials; i++) {
+      if (Math.random() < newPlantRate/newPlantTrials) {
+        createPlant();
+        plantsCreated++;
+      }
+    }
+    if (logging.createPlant) console.log(plantsCreated,"plants created");
   }
 }
 
@@ -110,6 +139,14 @@ const showPlant = coord => {
   fill(53,156,80);
   circle((x+0.5)*side,(y+0.5)*side,side);
   pop();
+}
+
+const recordCell = (cell,death) => {
+  const avgSize = cell.age != 0 ? cell.totalSize/cell.age :
+    orgList[orgAsgns[cell.id]].length;
+  const data = [cell.id,cell.birthTime,cell.age,cell.numReproduce,avgSize,
+    cell.skills[ADHESION],cell.skills[VISION],cell.skills[STRENGTH],cell.skills[ENERGY_EFF],death];
+  s += data.join()+"\n";
 }
 
 const resolveCollisionOldVersion = colliders => {
@@ -169,6 +206,7 @@ const resolveCollision = colliders => {
     losers.push(colliders[i].id);
     // console.log(colliders[i].id)
     energyTaken += colliders[i].energy;
+    recordCell(cells[colliders[i].id],0);
     delete cells[colliders[i].id];
   }
   return {
@@ -299,7 +337,7 @@ const updateCells = () => {
   for (let plantCoord of Object.keys(plants)) {
     if (!!grid[plantCoord]) {
       delete plants[plantCoord];
-      grid[plantCoord].energy += plantEnergy;
+      grid[plantCoord].energy += grid[plantCoord].skills[ENERGY_EFF]*plantEnergy;
       const cellId = grid[plantCoord].id;
       if (logging.eatPlant1) console.log(cellId,'ate plant');
       const orgId = orgAsgns[cellId];
@@ -313,13 +351,14 @@ const updateCells = () => {
   // use energy
   for (let cellId of Object.keys(cells)) {
     const cell = cells[cellId];
-    if (!cell.useEnergy()) {
+    if (!cell.useEnergy() || cell.age > ageLimit) {
       if (logging.energyDeath) console.log(cell.id,"died");
       const coord = cell.x+","+cell.y;
       const coordLeft = (cell.x-1)+","+cell.y;
       const coordUp = cell.x+","+(cell.y-1);
       if (!!grid[coordLeft]) grid[coordLeft].neighborRight = -1;
       if (!!grid[coordUp]) grid[coordUp].neighborDown = -1;
+      recordCell(cells[cellId],1);
       delete cells[cellId];
       delete grid[coord];
     }
@@ -333,11 +372,11 @@ const updateCells = () => {
       const coordRight = (cell.x+1)+","+cell.y;
       const cellRight = grid[coordRight];
       if (!!cellRight/* && org != orgAsgns[cellRight.id]*/) {
-        // const adhesion1 = cell.skills[ADHESION];
-        // const adhesion2 = cellRight.skills[ADHESION];
-        // if (Math.random() < adhesion1 || Math.random() < adhesion2) {
-        const adhesion = Math.min(cell.skills[ADHESION], cellRight.skills[ADHESION]);
-        if (Math.random() < adhesion) {
+        const adhesion1 = cell.skills[ADHESION];
+        const adhesion2 = cellRight.skills[ADHESION];
+        if (Math.random() < adhesion1 && Math.random() < adhesion2) {
+        // const adhesion = Math.min(cell.skills[ADHESION], cellRight.skills[ADHESION]);
+        // if (Math.random() < adhesion) {
           cell.neighborRight = cellRight.id;
           if (logging.connection) console.log(cell.id,"connect",cellRight.id,"right");
         }
@@ -347,11 +386,11 @@ const updateCells = () => {
       const coordDown = cell.x+","+(cell.y+1);
       const cellDown = grid[coordDown];
       if (!!cellDown/* && org != orgAsgns[cellDown.id]*/) {
-        // const adhesion1 = cell.skills[ADHESION];
-        // const adhesion2 = cellDown.skills[ADHESION];
-        // if (Math.random() < adhesion1 || Math.random() < adhesion2) {
-        const adhesion = Math.min(cell.skills[ADHESION], cellDown.skills[ADHESION]);
-        if (Math.random() < adhesion) {
+        const adhesion1 = cell.skills[ADHESION];
+        const adhesion2 = cellDown.skills[ADHESION];
+        if (Math.random() < adhesion1 && Math.random() < adhesion2) {
+        // const adhesion = Math.min(cell.skills[ADHESION], cellDown.skills[ADHESION]);
+        // if (Math.random() < adhesion) {
           cell.neighborDown = cellDown.id;
           if (logging.connection) console.log(cell.id,"connect",cellDown.id,"down");
         }
@@ -397,7 +436,7 @@ const updateCells = () => {
     currOrgId++;
   }
 
-  // redistribute energy, assign randDir, and mark for reproduction
+  // redistribute energy, assign randDir, mark for reproduction, increase totalSize
   const reproduction = []
   for (let orgId of Object.keys(orgList)) {
     const org = orgList[orgId];
@@ -413,13 +452,15 @@ const updateCells = () => {
     for (let cell of org) {
       cell.energy = energyPer;
       cell.randDir = totalDir/size;
+      cell.totalSize += size;
     }
   }
 
-  // initialize grid as arrays again
+  // initialize grid as arrays again, increase age
   grid = {};
   for (let cellId of Object.keys(cells)) {
     const cell = cells[cellId];
+    cell.age++;
     const coord = cell.x+","+cell.y;
     if (!!grid[coord]) console.error("unresolved collision before reproduction");
     grid[coord] = [cell];
@@ -437,6 +478,7 @@ const updateCells = () => {
       boundedBox[1] = max(boundedBox[1],cell.x);
       boundedBox[2] = min(boundedBox[2],cell.y);
       boundedBox[3] = max(boundedBox[3],cell.y);
+      cell.numReproduce++;
     }
     let offsetx;
     let offsety;
@@ -471,7 +513,7 @@ const updateCells = () => {
       const cell = orgCells[i];
       const [newx,newy] = [minoffsetx+cell.x-boundedBox[0],minoffsety+cell.y-boundedBox[2]];
       const skills = cell.skills.map(e => constrain(e+Math.random()*0.2-0.1,0,1));
-      const newCell = new Cell(currId,newx,newy,skills);
+      const newCell = new Cell(currId,newx,newy,skills,timestep+1);
       newCell.energy = newStartingEnergy;
       newCell.randDir = newDir;
       if (cell.neighborRight != -1) {
@@ -570,15 +612,11 @@ function draw() {
   }
   if (going && frameCount % simulationSpeed == 0) {
     updateCells();
-    if (Object.keys(plants).length < maxPlants && Math.random() < newPlantRate) {
-      const newPlantTrials = Math.ceil(newPlantRate*2);
-      for (let i = 0; i < newPlantTrials; i++) {
-        if (Math.random() < newPlantRate/newPlantTrials) {
-          createPlant();
-        }
-      }
-      if (logging.createPlant) console.log("plant created");
-    }
+    createPlants();
   }
+  // if (frameCount == 10000) {
+  //   noLoop();
+  //   console.log((new Date()).getTime()-startTime);
+  // }
   // noLoop();
 }

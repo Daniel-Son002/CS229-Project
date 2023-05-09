@@ -46,7 +46,7 @@ const visionCellOrder = [
 
 class Cell {
 
-  constructor(id, x, y, skills) {
+  constructor(id, x, y, skills, birthTime) {
     this.id = id;
     this.x = x;
     this.y = y;
@@ -67,6 +67,10 @@ class Cell {
     this.energyDecr = lerp(minEnergyDecrement,maxEnergyDecrement,1-this.skills[ENERGY_EFF]);
     this.neighborRight = -1;
     this.neighborDown = -1;
+    this.totalSize = 0;
+    this.age = 0;
+    this.numReproduce = 0;
+    this.birthTime = birthTime;
   }
 
   useEnergy() {
